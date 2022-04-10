@@ -1,0 +1,32 @@
+# Kubernetes intro
+
+Source: link:https://www.youtube.com/watch?v=Mw_rEH2pElw&list=PL8D2P0ruohOBSA_CDqJLflJ8FLJNe26K-&index=1[youtube]
+
+### [1.0] K8S Info
+
+#### Зачем нужен кубер?
+1. Env variables, хранение secrets(token/password)
+2. Автоскейлинг
+3. Stateful - приложения сохраняют свои данные (database, cache, etc)
+4. healthchecks
+5. настройка ресурсов
+
+#### Инструменты разработчика
+1. Minikube - в одну команду поднять маленький кластер
+2. Ksync
+3. Telepresence
+4. Skaffold
+
+#### Отладка
+1. cubectl-debug
+2. cubectl logs/describe
+
+#### Темплейтирование
+1. Helm
+2. Kustomise
+
+#### Можно быстро поднять окружение под разработку
+
+### [1.1] Схема кубера
+
+image:img/intro/k8s_scheme_1.png[]
