@@ -1,0 +1,116 @@
+
+___DOCKER ENV VARS___
+
+PS D:\Danik_Prog\Programming\Docker\projects\test_nodejs\logs-app> docker run -d -p 3000:3000 --name logs_app_env --rm  check_env_vars:env
+044aba69dfc62135bb7a6e45c4ba400d8c17c5c743bb5c9b112d846a40d67bdf
+PS D:\Danik_Prog\Programming\Docker\projects\test_nodejs\logs-app> docker stop logs_app_env
+PS D:\Danik_Prog\Programming\Docker\projects\test_nodejs\logs-app> docker run -d -p 3000:4200 --name logs_app_env --rm  check_env_vars:env
+0eaf7242590d66500adaf06331c52832123d22f003e687abfd1adfa565c5ab41
+PS D:\Danik_Prog\Programming\Docker\projects\test_nodejs\logs-app> docker stop logs_app_env
+logs_app_env
+PS D:\Danik_Prog\Programming\Docker\projects\test_nodejs\logs-app> docker run -d -p 3000:3000 --name logs_app_env --rm  check_env_vars:env
+PS D:\Danik_Prog\Programming\Docker\projects\test_nodejs\logs-app> docker stop logs_app_env
+logs_app_env
+
+PS D:\Danik_Prog\Programming\Docker\projects\test_nodejs\logs-app> docker run -d -p 3000:80 -e PORT=80 --name logs_app_env --rm  
+chec1b02c85c9b8335563e108d1b1e407c7eb53f92f80f7a63630786122a9a399a9c
+PS D:\Danik_Prog\Programming\Docker\projects\test_nodejs\logs-app> docker ps
+CONTAINER ID   IMAGE                COMMAND                  CREATED          STATUS         PORTS
+          NAMES
+1b02c85c9b83   check_env_vars:env   "docker-entrypoint.s…"   11 seconds ago   Up 4 seconds   4200/tcp, 0.0.0.0:3000->80/tcp, :::3000->80/tcp   logs_app_env
+PS D:\Danik_Prog\Programming\Docker\projects\test_nodejs\logs-app> docker stop logs_app_env
+logs_app_env
+
+PS D:\Danik_Prog\Programming\Docker\projects\test_nodejs\logs-app> docker run -d -p 3000:80 --env-file .config/.env --name logs_app_env --rm  check_env_vars:env
+docker: open .config/.env: The system cannot find the path specified.
+See 'docker run --help'.
+PS D:\Danik_Prog\Programming\Docker\projects\test_nodejs\logs-app> docker run -d -p 3000:80 --env-file ./config/.env --name logs_app_env --rm  check_env_vars:env
+c2bbda053c1c34fae3a1b406a2c01a54e1f90caa26ccc66ded3d3c0611a5b878
+
+
+___VOLUMES___
+
+    Docker has two options for containers to store files in the host machine, 
+so that the files are persisted even after the container stops: volumes, and bind mounts. 
+Volumes are stored in a part of the host filesystem which is managed by Docker (/var/lib/docker/volumes/ on Linux). 
+Non-Docker processes should not modify this part of the filesystem. Volumes are the best way to persist data in Docker.
+  Volumes are created and managed by Docker. You can create a volume explicitly using the docker volume create command, 
+or Docker can create a volume during container or service creation. When you create a volume, it is stored within 
+a directory on the Docker host. When you mount the volume into a container, this directory is what is mounted into 
+the container. This is similar to the way that bind mounts work, except that volumes are managed by Docker and are 
+isolated from the core functionality of the host machine. 
+  A given volume can be mounted into multiple containers simultaneously. When no running container is using a volume, 
+the volume is still available to Docker and is not removed automatically. You can remove unused volumes using docker volume prune.
+  When you mount a volume, it may be named or anonymous. Anonymous volumes are not given an explicit name 
+when they are first mounted into a container, so Docker gives them a random name that is guaranteed 
+to be unique within a given Docker host. Besides the name, named and anonymous volumes behave in the same ways.
+The only difference is that named volumes can exist without a container whereas anonymous cannot.
+  Volumes also support the use of volume drivers, which allow you to store your data on remote hosts or cloud providers,
+among other possibilities.
+
+PS D:\Danik_Prog\Programming\Docker\projects\test_nodejs\logs-app> docker run -d -p 3000:4200 --rm --name logsappv logsapp:volumes
+cf563070dc460717aa402ddd0fd2182240b701b8f58092c991764e54f7f285cf
+PS D:\Danik_Prog\Programming\Docker\projects\test_nodejs\logs-app> docker stop logsappv
+logsappv
+PS D:\Danik_Prog\Programming\Docker\projects\test_nodejs\logs-app> docker ps -a
+CONTAINER ID   IMAGE     COMMAND   CREATED   STATUS    PORTS     NAMES
+PS D:\Danik_Prog\Programming\Docker\projects\test_nodejs\logs-app> 
+PS D:\Danik_Prog\Programming\Docker\projects\test_nodejs\logs-app> docker volume ls 
+DRIVER    VOLUME NAME
+local     2fa94f0ec16b7833c1737091f416e012bf140b064b2457afc01688757921bcc6
+local     69e49549ffc132a18358fc67964dc267654cb81397398dbd8aef1b845b751f75
+
+Это АНОНИМНЫЕ вольюмы, которые будут удалены, когда их контейнеры будут удалены
+Чтобы вольюмы остались при удалении контейнера, необходимо их ПРОИМЕНОВАТЬ - "-v logs:/app/data"
+PS D:\Danik_Prog\Programming\Docker\projects\test_nodejs\logs-app> docker run -d -p 3000:4200 -v logs:/app/data --rm --name logsappv logsapp:volumes  
+7730d9ea4fd1ae9c3df5680cb9c5140b590ab2fad05bfd84da566967473ce409
+PS D:\Danik_Prog\Programming\Docker\projects\test_nodejs\logs-app> docker stop logsappv                                                               
+logsappv
+PS D:\Danik_Prog\Programming\Docker\projects\test_nodejs\logs-app> docker ps -a                                                                       
+CONTAINER ID   IMAGE     COMMAND   CREATED   STATUS    PORTS     NAMES
+PS D:\Danik_Prog\Programming\Docker\projects\test_nodejs\logs-app> docker run -d -p 3000:4200 -v logs:/app/data --rm --name logsappv logsapp:volumes  
+e893c42564b600eebefb25543ed2b9ad5d89f28ac4de816e3abc2fea6d3da5d0
+PS D:\Danik_Prog\Programming\Docker\projects\test_nodejs\logs-app> docker volume ls                                                                   
+DRIVER    VOLUME NAME
+local     2fa94f0ec16b7833c1737091f416e012bf140b064b2457afc01688757921bcc6
+local     logs
+[
+        "CreatedAt": "2021-10-02T10:21:21Z",
+        "Labels": null,
+        "Mountpoint": "/var/lib/docker/volumes/logs/_data",
+        "Name": "logs",
+        "Scope": "local"
+]
+
+PS D:\Danik_Prog\Programming\Docker\projects\test_nodejs\logs-app> docker volume rm logs
+Error response from daemon: remove logs: volume is in use - [e893c42564b600eebefb25543ed2b9ad5d89f28ac4de816e3abc2fea6d3da5d0]
+PS D:\Danik_Prog\Programming\Docker\projects\test_nodejs\logs-app> docker stop logsappv                                                               
+PS D:\Danik_Prog\Programming\Docker\projects\test_nodejs\logs-app> docker volume rm logs     
+logs
+PS D:\Danik_Prog\Programming\Docker\projects\test_nodejs\logs-app> docker volume ls                                                                   
+DRIVER    VOLUME NAME
+local     2fa94f0ec16b7833c1737091f416e012bf140b064b2457afc01688757921bcc6
+local     69e49549ffc132a18358fc67964dc267654cb81397398dbd8aef1b845b751f75
+PS D:\Danik_Prog\Programming\Docker\projects\test_nodejs\logs-app> docker volume create logs
+logs
+PS D:\Danik_Prog\Programming\Docker\projects\test_nodejs\logs-app> docker volume ls
+DRIVER    VOLUME NAME
+local     2fa94f0ec16b7833c1737091f416e012bf140b064b2457afc01688757921bcc6
+local     69e49549ffc132a18358fc67964dc267654cb81397398dbd8aef1b845b751f75
+local     logs
+
+
+___DEV-MODE_BY_VOLUMES___
+docker run -d -p 3000:4200 -v "D:/Danik_Prog/Programming/Docker/projects/test_nodejs/logs-app":/app -v /app/node_modules -v logs:/app/data --rm --name logsappv logsapp:volumes  
+
+PS D:\Danik_Prog\Programming\Docker\projects\test_nodejs\logs-app> docker run -d -p 3000:4200 -v D:\Danik_Prog\Programming\Docker\projects\test_nodejs\logs-app:/app -v /app/node_modules -v logs:/app/data --rm --name logsappv logsapp:volumes
+6b73c9c4bde9f4413acfb0eb0798f1d007676818541aa27c91230ffdef136ecf
+docker: Error response from daemon: error while creating mount source path '/run/desktop/mnt/host/d/Danik_Prog/Programming/Docker/projects/test_nodejs/logs-app': mkdir /run/desktop/mnt/host/d: file exists.
+(but have error)
+
+
+
+
+
+
+

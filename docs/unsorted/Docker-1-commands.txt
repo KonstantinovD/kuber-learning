@@ -1,0 +1,301 @@
+
+___DOCKER PS/RM/IMAGES/PULL___
+
+C:\Users\User>docker ps
+CONTAINER ID   IMAGE     COMMAND                  CREATED          STATUS          PORTS     NAMES
+260d308a437b   node      "docker-entrypoint.s…"   20 seconds ago   Up 16 seconds             stoic_mclean
+
+C:\Users\User>docker ps -a
+CONTAINER ID   IMAGE               COMMAND                  CREATED              STATUS                      PORTS     NAMES
+260d308a437b   node                "docker-entrypoint.s…"   About a minute ago   Exited (0) 9 seconds ago              stoic_mclean
+51bff6c67a49   node                "docker-entrypoint.s…"   6 minutes ago        Exited (0) 5 minutes ago              infallible_zhukovsky
+3e040cbfcea6   node                "docker-entrypoint.s…"   14 minutes ago       Exited (0) 11 minutes ago             affectionate_carson
+77a858c3880d   29dee3ac2911        "python index.py"        36 minutes ago       Exited (0) 28 minutes ago             strange_boyd
+3a61c6f34690   docker101tutorial   "/docker-entrypoint.…"   49 minutes ago       Exited (0) 37 minutes ago             docker-tutorial
+2216f772bce7   alpine/git          "git clone https://g…"   56 minutes ago       Exited (0) 56 minutes ago             repo
+
+C:\Users\User>docker rm 3e040cbfcea6
+3e040cbfcea6
+
+D:\Danik_Prog\Programming\Docker\projects\test_python>docker pull node
+Status: Downloaded newer image for node:latest
+docker.io/library/node:latest
+
+D:\Danik_Prog\Programming\Docker\projects\test_python>docker images
+REPOSITORY          TAG       IMAGE ID       CREATED          SIZE
+<none>              <none>    29dee3ac2911   18 minutes ago   911MB
+docker101tutorial   latest    bf4a549e0924   28 minutes ago   28.3MB
+node                latest    93f5457b802e   8 days ago       908MB
+alpine/git          latest    b8f176fa3f0d   4 months ago     25.1MB
+
+D:\Danik_Prog\Programming\Docker\projects\test_python>docker ps
+CONTAINER ID   IMAGE     COMMAND   CREATED   STATUS    PORTS     NAMES
+
+
+___DOCKER RUN/-it/___
+
+D:\Danik_Prog\Programming\Docker\projects\test_python>docker run node
+
+D:\Danik_Prog\Programming\Docker\projects\test_python>docker ps -l
+CONTAINER ID   IMAGE     COMMAND                  CREATED         STATUS                          PORTS     NAMES
+3e040cbfcea6   node      "docker-entrypoint.s…"   4 minutes ago   Exited (0) About a minute ago             affectionate_carson
+
+D:\Danik_Prog\Programming\Docker\projects\test_python>docker run -it node
+Welcome to Node.js v16.9.1.
+Type ".help" for more information.
+> 1+1
+2
+> process.version
+'v16.9.1'
+> .exit
+
+D:\Danik_Prog\Programming\Docker\projects\test_python>node -v
+v13.11.0
+
+D:\Danik_Prog\Programming\Docker\projects\test_python>docker run -it node
+Welcome to Node.js v16.9.1.
+Type ".help" for more information.
+> .exit
+
+
+___DOCKER PRUNE___
+
+C:\Users\User>docker container prune
+WARNING! This will remove all stopped containers.
+Are you sure you want to continue? [y/N] y
+Deleted Containers:
+260d308a437b898251eeb169a4082f52aadbc7fc506ab184b55da965cb63fdf6
+51bff6c67a49862ccb2438852c725364553d8daab803433cee69295ce75fc52f
+77a858c3880d798c1f3ffd0ac1d0bcb02f5503ca40272ed813a0944a66f6210e
+3a61c6f346906053024b982b024c88077164eddcfe730c48d4c974935df462f5
+2216f772bce7fcbe7b2123a1f4e38b91fc492c9dd5850bfe2a9fd277f34c9c23
+
+Total reclaimed space: 161.6kB
+
+C:\Users\User>docker ps -a
+CONTAINER ID   IMAGE     COMMAND   CREATED   STATUS    PORTS     NAMES
+
+
+___DOCKER run containes on port___
+
+PS D:\Danik_Prog\Programming\Docker\projects\test_nodejs\logs-app> docker ps
+CONTAINER ID   IMAGE          COMMAND                  CREATED              STATUS              PORTS
+      NAMES
+bdd7e5e6707b   6b912a6fa6e7   "docker-entrypoint.s…"   About a minute ago   Up About a minute   0.0.0.0:3000->3000/tcp, :::3000->3000/tcp   competent_tharp
+PS D:\Danik_Prog\Programming\Docker\projects\test_nodejs\logs-app> docker stop bdd7e5e6707b
+bdd7e5e6707b
+PS D:\Danik_Prog\Programming\Docker\projects\test_nodejs\logs-app> docker run -d -p 80:3000 6b912a6fa6e7 
+0694670f8be5c46383b77ae8127e0e0b6bb0ec88365000c74471051c42e896fd
+PS D:\Danik_Prog\Programming\Docker\projects\test_nodejs\logs-app>
+
+PS D:\Danik_Prog\Programming\Docker\projects\test_nodejs\logs-app> docker run -d -p 80:3000 6b912a6fa6e7
+0694670f8be5c46383b77ae8127e0e0b6bb0ec88365000c74471051c42e896fd
+PS D:\Danik_Prog\Programming\Docker\projects\test_nodejs\logs-app> docker build .
+ => [internal] load build definition from Dockerfile                                                                            1.6s 
+ => => transferring dockerfile: 1.00kB                                                                                          0.6s 
+ => [internal] load .dockerignore                                                                                               1.1s 
+ => => transferring context: 2B                                                                                                 0.0s 
+ => [internal] load metadata for docker.io/library/node:latest                                                                  0.0s 
+ => [1/5] FROM docker.io/library/node                                                                                           0.0s 
+ => => transferring context: 94.70kB                                                                                            1.8s 
+ => CACHED [2/5] WORKDIR /app                                                                                                   0.0s 
+ => [3/5] COPY package.json .                                                                                                   1.6s 
+ => [4/5] RUN npm install                                                                                                      40.7s 
+time="2021-09-25T22:16:43+03:00" level=error msg="got 3 SIGTERM/SIGINTs, forcing shutdown"
+PS D:\Danik_Prog\Programming\Docker\projects\test_nodejs\logs-app> ^C
+PS D:\Danik_Prog\Programming\Docker\projects\test_nodejs\logs-app> docker build logs1 .
+"docker build" requires exactly 1 argument.
+See 'docker build --help'.
+
+Usage:  docker build [OPTIONS] PATH | URL | -
+
+Build an image from a Dockerfile
+PS D:\Danik_Prog\Programming\Docker\projects\test_nodejs\logs-app> docker build .      
+[+] Building 60.9s (10/10) FINISHED
+ => [internal] load build definition from Dockerfile                                                                            1.1s 
+ => => transferring dockerfile: 1.72kB                                                                                          0.0s 
+ => [internal] load .dockerignore                                                                                               1.5s 
+ => [internal] load metadata for docker.io/library/node:latest                                                                  0.0s 
+ => [1/5] FROM docker.io/library/node                                                                                           0.0s 
+ => [internal] load build context                                                                                               1.3s 
+ => => transferring context: 94.25kB                                                                                            0.5s 
+ => CACHED [2/5] WORKDIR /app                                                                                                   0.0s 
+ => CACHED [3/5] COPY package.json .                                                                                            0.0s 
+ => [4/5] RUN npm install                                                                                                      35.1s 
+ => [5/5] COPY . .                                                                                                             15.8s 
+ => exporting to image                                                                                                          5.9s 
+ => => exporting layers                                                                                                         4.6s 
+ => => writing image sha256:c661c9ab0cb5c16cd01aacd38cd10af6efebea4035f2d8e51154a6f9d295d430                                    0.2s 
+
+Use 'docker scan' to run Snyk tests against images to find vulnerabilities and learn how to fix them
+PS D:\Danik_Prog\Programming\Docker\projects\test_nodejs\logs-app> docker build .
+[+] Building 19.6s (10/10) FINISHED
+ => [internal] load build definition from Dockerfile                                                                            1.4s 
+ => => transferring dockerfile: 32B                                                                                             0.0s 
+ => [internal] load .dockerignore                                                                                               1.6s 
+ => [internal] load metadata for docker.io/library/node:latest                                                                  0.0s 
+ => [internal] load build context                                                                                               1.5s 
+ => [1/5] FROM docker.io/library/node                                                                                           0.0s 
+ => CACHED [2/5] WORKDIR /app                                                                                                   0.0s 
+ => CACHED [3/5] COPY package.json .                                                                                            0.0s 
+ => CACHED [4/5] RUN npm install                                                                                                0.0s 
+ => [5/5] COPY . .                                                                                                             11.0s 
+ => exporting to image                                                                                                          3.9s 
+ => => exporting layers                                                                                                         2.1s 
+ => => writing image sha256:f6693a4f8a0ae4cb501e6994f5d63790c8931d853cfeb804d0409980b441f68a                                    0.2s 
+Use 'docker scan' to run Snyk tests against images to find vulnerabilities and learn how to fix them
+docker: Invalid containerPort: -d.
+See 'docker run --help'.
+PS D:\Danik_Prog\Programming\Docker\projects\test_nodejs\logs-app> docker images
+REPOSITORY          TAG       IMAGE ID       CREATED              SIZE
+<none>              <none>    c661c9ab0cb5   About a minute ago   923MB
+<none>              <none>    29dee3ac2911   4 days ago           911MB
+node                latest    93f5457b802e   12 days ago          908MB
+alpine/git          latest    b8f176fa3f0d   4 months ago         25.1MB
+PS D:\Danik_Prog\Programming\Docker\projects\test_nodejs\logs-app> docker run -d -p 3000:3000 f6693a4f8a0a 
+7bee52e5151ab0e4655776762911df5375a8dd72d4b7d00fc311a8ac32126afe
+CONTAINER ID   IMAGE          COMMAND                  CREATED              STATUS              PORTS
+       NAMES
+7bee52e5151a   f6693a4f8a0a   "docker-entrypoint.s…"   About a minute ago   Up About a minute   0.0.0.0:3000->3000/tcp, :::3000->3000/tcp   stupefied_satoshi
+7bee52e5151a
+367c3fac44fec8989db1792f07beee431931832e500fcef114c40b714177b3eb
+CONTAINER ID   IMAGE          COMMAND                  CREATED          STATUS         PORTS                                       NAMES
+367c3fac44fe   f6693a4f8a0a   "docker-entrypoint.s…"   11 seconds ago   Up 5 seconds   0.0.0.0:3000->3000/tcp, :::3000->3000/tcp   distracted_goodall
+CONTAINER ID   IMAGE          COMMAND                  CREATED         STATUS         PORTS                                       NAM367c3fac44fe   f6693a4f8a0a   "docker-entrypoint.s…"   2 minutes ago   Up 2 minutes   0.0.0.0:3000->3000/tcp, :::3000->3000/tcp   distracted_goodall
+367c3fac44fe
+
+
+___DOCKER run containes on port with name___
+
+PS D:\Danik_Prog\Programming\Docker\projects\test_nodejs\logs-app> docker run -d -p 3000:3000 --name logs_app_1 f6693a4f8a0a
+fb024c9ddad45fa6f27508cab15e03dd6c1c568d5378d7238d451fb4938f9bf1
+PS D:\Danik_Prog\Programming\Docker\projects\test_nodejs\logs-app> docker ps
+CONTAINER ID   IMAGE          COMMAND                  CREATED          STATUS         PORTS                                       NAMES
+fb024c9ddad4   f6693a4f8a0a   "docker-entrypoint.s…"   19 seconds ago   Up 6 seconds   0.0.0.0:3000->3000/tcp, :::3000->3000/tcp   logs_app_1
+PS D:\Danik_Prog\Programming\Docker\projects\test_nodejs\logs-app> docker stop logs_app_1
+PS D:\Danik_Prog\Programming\Docker\projects\test_nodejs\logs-app> docker containers prune
+See 'docker --help'
+PS D:\Danik_Prog\Programming\Docker\projects\test_nodejs\logs-app> docker container prune 
+WARNING! This will remove all stopped containers.
+Are you sure you want to continue? [y/N] y
+fb024c9ddad45fa6f27508cab15e03dd6c1c568d5378d7238d451fb4938f9bf1
+367c3fac44fec8989db1792f07beee431931832e500fcef114c40b714177b3eb
+7bee52e5151ab0e4655776762911df5375a8dd72d4b7d00fc311a8ac32126afe
+0694670f8be5c46383b77ae8127e0e0b6bb0ec88365000c74471051c42e896fd
+Total reclaimed space: 0B
+780f644f614abfab70a1c6bf66e09ef8fdb8592584ad05465ae624f8c9472119
+CONTAINER ID   IMAGE          COMMAND                  CREATED          STATUS          PORTS                                       NAMES
+780f644f614a   f6693a4f8a0a   "docker-entrypoint.s…"   26 seconds ago   Up 19 seconds   0.0.0.0:3000->3000/tcp, :::3000->3000/tcp   logs_app_2
+PS D:\Danik_Prog\Programming\Docker\projects\test_nodejs\logs-app> docker ps -a                                                      
+CONTAINER ID   IMAGE          COMMAND                  CREATED          STATUS          PORTS                                       NAMES
+780f644f614a   f6693a4f8a0a   "docker-entrypoint.s…"   39 seconds ago   Up 33 seconds   0.0.0.0:3000->3000/tcp, :::3000->3000/tcp   lPS D:\Danik_Prog\Programming\Docker\projects\test_nodejs\logs-app> docker stop logs_app_2                                            
+logs_app_2
+PS D:\Danik_Prog\Programming\Docker\projects\test_nodejs\logs-app> docker ps -a
+PS D:\Danik_Prog\Programming\Docker\projects\test_nodejs\logs-app> docker images                                                     
+REPOSITORY          TAG       IMAGE ID       CREATED          SIZE
+<none>              <none>    f6693a4f8a0a   16 minutes ago   923MB
+<none>              <none>    c661c9ab0cb5   17 minutes ago   923MB
+<none>              <none>    6b912a6fa6e7   4 hours ago      917MB
+docker101tutorial   latest    bf4a549e0924   4 days ago       28.3MB
+alpine/git          latest    b8f176fa3f0d   4 months ago     25.1MB
+
+
+___DOCKER RMI/IMAGE PRUNE___
+
+PS D:\Danik_Prog\Programming\Docker\projects\test_nodejs\logs-app> docker rmi 29dee3ac2911 6b912a6fa6e7 c661c9ab0cb5
+Deleted: sha256:29dee3ac29117acb2d209ec8f5bcb17c34ccfcad342a75450397ecc57119cdb4
+Deleted: sha256:6b912a6fa6e75178c11c432c5e411085e830ec6ac8af073a74aebb63298d318e
+Deleted: sha256:c661c9ab0cb5c16cd01aacd38cd10af6efebea4035f2d8e51154a6f9d295d430
+PS D:\Danik_Prog\Programming\Docker\projects\test_nodejs\logs-app> docker images
+<none>              <none>    f6693a4f8a0a   17 minutes ago   923MB
+docker101tutorial   latest    bf4a549e0924   4 days ago       28.3MB
+node                latest    93f5457b802e   12 days ago      908MB
+alpine/git          latest    b8f176fa3f0d   4 months ago     25.1MB
+Error: No such image: prune
+PS D:\Danik_Prog\Programming\Docker\projects\test_nodejs\logs-app> docker image prune
+Are you sure you want to continue? [y/N] y
+Deleted Images:
+deleted: sha256:f6693a4f8a0ae4cb501e6994f5d63790c8931d853cfeb804d0409980b441f68a
+
+Total reclaimed space: 0B
+PS D:\Danik_Prog\Programming\Docker\projects\test_nodejs\logs-app> docker images                                                     
+REPOSITORY          TAG       IMAGE ID       CREATED        SIZE
+docker101tutorial   latest    bf4a549e0924   4 days ago     28.3MB
+node                latest    93f5457b802e   12 days ago    908MB
+alpine/git          latest    b8f176fa3f0d   4 months ago   25.1MB
+
+
+___DOCKER build with "-t"___
+
+PS D:\Danik_Prog\Programming\Docker\projects\test_nodejs\logs-app> docker build -t LOGS_APP_NODE .
+invalid argument "LOGS_APP_NODE" for "-t, --tag" flag: invalid reference format: repository name must be lowercase
+See 'docker build --help'.
+PS D:\Danik_Prog\Programming\Docker\projects\test_nodejs\logs-app> docker build -t logs_app_node .
+[+] Building 15.5s (10/10) FINISHED
+ => [internal] load build definition from Dockerfile                                                                            0.9s 
+ => => transferring dockerfile: 32B                                                                                             0.3s 
+ => [internal] load .dockerignore                                                                                               1.0s 
+ => => transferring context: 2B                                                                                                 0.2s 
+ => [1/5] FROM docker.io/library/node                                                                                           0.0s 
+ => [internal] load build context                                                                                               0.9s 
+ => => transferring context: 93.74kB                                                                                            0.4s 
+ => CACHED [2/5] WORKDIR /app                                                                                                   0.0s 
+ => CACHED [3/5] COPY package.json .                                                                                            0.0s 
+ => [5/5] COPY . .                                                                                                             10.4s 
+ => => exporting layers                                                                                                         1.3s 
+ => => naming to docker.io/library/logs_app_node                                                                                0.2s 
+
+Use 'docker scan' to run Snyk tests against images to find vulnerabilities and learn how to fix them
+PS D:\Danik_Prog\Programming\Docker\projects\test_nodejs\logs-app> docker images                                                     
+REPOSITORY          TAG       IMAGE ID       CREATED         SIZE
+logs_app_node       latest    498a2deb50eb   2 minutes ago   923MB
+docker101tutorial   latest    bf4a549e0924   4 days ago      28.3MB
+node                latest    93f5457b802e   12 days ago     908MB
+alpine/git          latest    b8f176fa3f0d   4 months ago    25.1MB
+
+
+___DOCKER build with "-rm" - to autoremove container after stopping___
+
+PS D:\Danik_Prog\Programming\Docker\projects\test_nodejs\logs-app> docker run -d -p 3000:3000 --name logs_app_2 --rm  logs_app_node  
+d757c93f1dee5f59a0ffcd68c9eb544e05a15ff0292cb94c425766d83835cdd9
+PS D:\Danik_Prog\Programming\Docker\projects\test_nodejs\logs-app> docker stop logs_app_2                                            
+logs_app_2
+
+
+___DOCKER work with container with version___
+
+PS D:\Danik_Prog\Programming\Docker\projects\test_nodejs\logs-app> docker build -t logs_app_node:future_branch .                     
+[+] Building 12.6s (10/10) FINISHED
+ => [internal] load build definition from Dockerfile                                                                            0.6s 
+ => => transferring dockerfile: 32B                                                                                             0.0s 
+ => [internal] load .dockerignore                                                                                               0.8s 
+ => => transferring context: 2B                                                                                                 0.0s 
+ => [1/5] FROM docker.io/library/node                                                                                           0.0s 
+ => [internal] load build context                                                                                               0.9s 
+ => => transferring context: 93.79kB                                                                                            0.4s 
+ => CACHED [2/5] WORKDIR /app                                                                                                   0.0s 
+ => CACHED [3/5] COPY package.json .                                                                                            0.0s 
+ => CACHED [4/5] RUN npm install                                                                                                0.0s 
+ => => exporting layers                                                                                                         1.3s 
+ => => writing image sha256:8374630a182cd758c65a8913bf2fb44a1f5925598f1ea442a3474d2428fef23d                                    0.1s 
+ => => naming to docker.io/library/logs_app_node:future_branch                                                                  0.1s 
+
+Use 'docker scan' to run Snyk tests against images to find vulnerabilities and learn how to fix them
+PS D:\Danik_Prog\Programming\Docker\projects\test_nodejs\logs-app> docker images                                                     
+REPOSITORY          TAG             IMAGE ID       CREATED          SIZE
+logs_app_node       future_branch   8374630a182c   15 seconds ago   923MB
+logs_app_node       latest          498a2deb50eb   5 minutes ago    923MB
+docker101tutorial   latest          bf4a549e0924   4 days ago       28.3MB
+node                latest          93f5457b802e   12 days ago      908MB
+alpine/git          latest          b8f176fa3f0d   4 months ago     25.1MB
+PS D:\Danik_Prog\Programming\Docker\projects\test_nodejs\logs-app> docker run -d -p 3000:3000 --name logs_app_2 --rm  logs_app_node:future_branch
+8ad7156ed06d55cd71f80a25687ed3d91bbdb7055912a5a126d732b8c0f312f7
+PS D:\Danik_Prog\Programming\Docker\projects\test_nodejs\logs-app> docker stop logs_app_2
+logs_app_2
+PS D:\Danik_Prog\Programming\Docker\projects\test_nodejs\logs-app> docker rmi logs_app_node:future_branch
+Untagged: logs_app_node:future_branch
+Deleted: sha256:8374630a182cd758c65a8913bf2fb44a1f5925598f1ea442a3474d2428fef23d
+
+
+
+

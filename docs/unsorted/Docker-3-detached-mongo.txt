@@ -1,0 +1,48 @@
+
+___DOCKER -d___
+
+docker "-d" - detached mode, логи в эту консоль идти не будут 
+
+
+___DOCKER detached mongo___
+
+D:\Danik_Prog\Programming\Docker\projects\test_mongo_in_container>docker run --rm -d -p 27012:27017 mongo
+Unable to find image 'mongo:latest' locally
+latest: Pulling from library/mongo
+7b1a6ab2e44d: Pull complete
+90eb44ebc60b: Pull complete
+5085b59f2efb: Pull complete
+c7499923d022: Pull complete
+019496b6c44a: Pull complete
+c0df4f407f69: Pull complete
+351daa315b6c: Pull complete
+557b07ecd9d7: Pull complete
+a2dff157a5e3: Pull complete
+07d83e88231b: Pull complete
+Digest: sha256:07212fb304ea36b8c5a9e5694527f16deeb0b99f87fc60162dc15ab260bf8a2a
+Status: Downloaded newer image for mongo:latest
+a8c3e6a40961de57bf9fa97879bae82b191fb1827ac3fc5880c1b68c563eeea6
+
+mongo db documents
+[
+  {
+    "Names": [
+      "Lewis gun",
+      "Lewis automatic machine gun",
+      "Lewis automatic rifle"
+    ],
+    "Type": "Light machine gun",
+    "Muzzle velocity": "740"
+  },
+  {
+    "Names": [
+      "M1903 Springfield",
+      "United States Rifle, Caliber .30-06, Model 1903"
+    ],
+    "Action": "Bolt action",
+    "Cartridge": [
+      "7.62×65"
+    ],
+    "Muzzle velocity": "850"
+  }
+]

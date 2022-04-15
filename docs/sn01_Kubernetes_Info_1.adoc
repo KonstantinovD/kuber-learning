@@ -12,10 +12,11 @@ Source: link:https://www.youtube.com/watch?v=Mw_rEH2pElw&list=PL8D2P0ruohOBSA_CD
 5. настройка ресурсов
 
 #### Инструменты разработчика
-1. Minikube - в одну команду поднять маленький кластер
-2. Ksync
-3. Telepresence
-4. Skaffold
+1. Minikube
+2. Kind - k8s in docker container
+3. Ksync
+4. Telepresence
+5. Skaffold
 
 #### Отладка
 1. cubectl-debug
