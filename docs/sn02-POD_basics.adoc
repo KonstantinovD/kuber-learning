@@ -1,0 +1,102 @@
+# POD - basics.
+
+Source: link:https://www.youtube.com/watch?v=V6aGfrMXhbA&list=PL8D2P0ruohOBSA_CDqJLflJ8FLJNe26K-&index=2[youtube]
+
+*Content:*
+
+- 1) Base console commands & Kind
+- 2) POD
+
+
+### 1) Определение. Примеры подов с несколькими контейнерами
+
+*Pod* - *_минимальная единица_* (абстракция) кубера - одно приложение в кластере. Внутри пода есть контейнеры, в 99% случаев 1 под - 1 кастомный контейнер +
+*Но!* Внутри одного пода всегда 2 контейнера - сначала создается контейнер POD - под сетевого контейнера (создает сеть), потом создается кастомный контейнер.
+
+С контейнерами *_напрямую_* кубер не работает
+
+Бывают случаи, когда в поде есть более одного кастомного контейнера, например, если у контейнеров *_"сильная связь"_* и они просто не могут быть в разных подах:
+
+1. *_prometheus + config-reloader + exporter_*. +
+Прометей не умеет отслеживать изменения в своем конфиге сам, поэтому релоадер отслеживает их за него и дергает веб апи прометея по локалхосту (они в одном поде) - так быстрее. +
+То же самое и про blackbox-exporter. +
+Если у вас два прометея - у вас два релоадера, два экспортера
+2. *_Service-mesh_* +
+добавляет еще один контейнер с проксей
+
+
+### 2) Создание пода
+
+[source, bash]
+----
+> kubectl create -f school-dev-k8s-main/practice/3.application-abstractions/1.pod/pod.yaml
+-----------------------------
+pod/my-pod created
+
+> kubectl get pod
+-----------------------------
+NAME     READY   STATUS              RESTARTS   AGE
+my-pod   0/1     ContainerCreating   0          11s
+----
+
+меняем:
+[source, yaml]
+----
+metadata:
+  name: my-pod-1
+----
+
+запускаем новый под:
+[source, bash]
+----
+> kubectl create -f school-dev-k8s-main/practice/3.application-abstractions/1.pod/pod.yaml
+-----------------------------
+pod/my-pod-1 created
+
+> kubectl get pod
+-----------------------------
+NAME       READY   STATUS              RESTARTS   AGE
+my-pod     1/1     Running             0          8m41s
+my-pod-1   0/1     ContainerCreating   0          4s
+----
+
+
+### 3) Get pod info
+
+[source, bash]
+----
+> kubectl describe pod my-pod
+-----------------------------
+Name:         my-pod
+Namespace:    default
+Priority:     0
+Node:         kind-control-plane/172.19.0.2
+Start Time:   Wed, 13 Apr 2022 00:23:03 +0300
+Started:      Wed, 13 Apr 2022 00:24:10 +0300
+Status:       Running
+IP:           10.244.0.5
+Image:        quay.io/testing-farm/nginx:1.12
+Events:
+Type    Reason     Age    From               Message
+----    ------     ----   ----               -------
+Normal  Scheduled  9m25s  default-scheduler  Successfully assigned
+...
+----
+
+
+### 4. Удаление пода
+
+- 1. По имени:
+[source, bash]
+----
+> kubectl delete pod my-pod
+-----------------------------
+pod "my-pod" deleted
+----
+- 2. Через YML-файл (который юзался для создания)
+[source, bash]
+----
+> kubectl delete -f school-dev-k8s-main/practice/3.application-abstractions/1.pod/pod.yaml
+-----------------------------
+pod "my-pod-1" deleted
+----
