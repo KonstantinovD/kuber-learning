@@ -8,6 +8,7 @@ Source: link:https://www.youtube.com/watch?v=V6aGfrMXhbA&list=PL8D2P0ruohOBSA_CD
 - 2) Создание пода
 - 3) Get pod info
 - 4) Удаление пода
+- 5) Поиск пода по лейблу
 
 
 ### 1) Определение. Примеры подов с несколькими контейнерами
@@ -32,6 +33,7 @@ apiVersion: v1
 добавляет еще один контейнер с проксей
 
 *_See Example:_* _yml/sn02_POD_basics/pod.yml_
+
 
 ### 2) Создание пода
 
@@ -108,3 +110,16 @@ pod "my-pod" deleted
 -----------------------------
 pod "my-pod-1" deleted
 ----
+
+
+### 5) Поиск пода по лейблу
+
+[source, bash]
+----
+> kubectl get pod -l app=my-app
+-----------------------------
+NAME                  READY   STATUS    RESTARTS   AGE
+my-replicaset-bwln7   1/1     Running   0          6m11s
+my-replicaset-kgwhh   1/1     Running   0          6m11s
+----
+
