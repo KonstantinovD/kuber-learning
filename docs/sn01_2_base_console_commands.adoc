@@ -1,0 +1,81 @@
+# Base console commands
+
+Source: link:https://www.youtube.com/watch?v=V6aGfrMXhbA&list=PL8D2P0ruohOBSA_CDqJLflJ8FLJNe26K-&index=2[youtube]
+
+*Content:*
+
+- 1) Создать кластер
+- 2) get base info / cluster name
+- 3) Get config (kind)
+- 4) Get all namespaces
+- 5) Get pods in ALL namespaces
+
+### 1) Создать кластер
+
+[source, bash]
+----
+> kind create cluster --name=example2
+----
+
+
+### 2) get base info / cluster name
+Get base info about the cluster:
+[source, bash]
+----
+> kubectl cluster-info --context kind-example2
+------------------------------------------------------------
+Kubernetes master is running at https://127.0.0.1:52120
+CoreDNS is running at https://127.0.0.1:52120/api/v1/namespaces/kube-system/services/kube-dns:dns/proxy
+----
+
+Get cluster name:
+[source, bash]
+----
+> kubectl config view --minify -o jsonpath='{.clusters[].name}'
+------------------------------------------------------------
+'kind-example2'
+----
+Соответственно, имя будет *_"example2"_*
+
+
+### 3) Get config (kind)
+[source, bash]
+----
+> kind get kubeconfig --name="example2"
+---------------------------------
+apiVersion: v1
+clusters:
+- cluster:
+    certificate-authority-data: ABCDE...
+    server: https://127.0.0.1:52120
+  name: kind-example2
+contexts:
+- context:
+...
+----
+
+
+### 4) Get all namespaces
+[source, bash]
+----
+> kubectl get namespaces
+---------------------------------
+NAME                 STATUS   AGE
+default              Active   95m
+kube-node-lease      Active   95m
+kube-public          Active   95m
+kube-system          Active   95m
+local-path-storage   Active   95m
+----
+
+
+### 5) Get pods in ALL namespaces
+[source, bash]
+----
+> kubectl get pods --all-namespaces=true
+---------------------------------
+>NAMESPACE          NAME             READY STATUS  RESTARTS      AGE
+>kube-system        control-plane    1/1  Running 1 (6m9s ago)   25h
+>local-path-storage local-path-pr... 1/1  Running 16 (3m37s ago) 25h
+...
+----

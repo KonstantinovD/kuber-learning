@@ -13,10 +13,11 @@ Source: link:https://www.youtube.com/watch?v=Mw_rEH2pElw&list=PL8D2P0ruohOBSA_CD
 
 #### Инструменты разработчика
 1. Minikube
-2. Kind - k8s in docker container
-3. Ksync
-4. Telepresence
-5. Skaffold
+2. Kind - кубер в докере
+3. Kind - k8s in docker container
+4. Ksync
+5. Telepresence
+6. Skaffold
 
 #### Отладка
 1. cubectl-debug
