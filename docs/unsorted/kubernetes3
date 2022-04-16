@@ -1,0 +1,192 @@
+PATH: kuber-learning/src/main/yml/sn03-ReplicaSet/...
+
+1) ReplicaSet intro/create
+
+как у пода - есть metadata/name/specs
+отличие: 3 параметра
+specs:
+  replicas: 2
+  selector:
+    matchLabels:
+	  app: my-app
+  template:
+    metadata:
+	  labels:
+	    app: my-app
+    specs:
+	  containers:
+	  - image: ...
+	    name: ...
+		ports:
+		  ...
+
+replicas - сколько реплик хотим запустить
+selector - выбирает поду по label
+
+template - описание самого пода, внутри specs
+имя в metadata не указываем, т к replicaSet сам укажет за вас имя
+но имя контейнера в поде указываем (причем имена контейнеров должны быть уникальны)
+
+labels - штука, которая может стоять в metadata любого из ресурсов, ее можно даже в metadata самого ReplicaSet повесить
+По лейблам работает весь кубер (можно проставлять на любые объекты) - он их юзает чтобы понять какие поды привязаны к какому репликасета, либо для того чтобы показать к какому приложению относится конкретный ReplicaSet
+
+CREATE - выполняется ровно один раз, повторное создание такого же пода - ошибка
+kubectl create -f replicaset.yaml
+APPLY - применяются изменения к поде (простейший CI/CD)
+kubectl apply -f replicaset.yaml
+
+>kubectl apply -f replicaset.yaml
+replicaset.apps/my-replicaset created
+
+>kubectl get rs
+NAME            DESIRED   CURRENT   READY   AGE
+my-replicaset   2         2         2       20s
+
+
+>kubectl get po
+NAME                  READY   STATUS    RESTARTS   AGE
+my-replicaset-bwln7   1/1     Running   0          25s
+my-replicaset-kgwhh   1/1     Running   0          25s
+
+Имена подов - <replicaset_name>-xxxxx
+
+К подам применились лейблы:
+>kubectl describe pod my-replicaset-bwln7
+Name:         my-replicaset-bwln7
+Namespace:    default
+Labels:       app=my-app
+
+Поиск пода по лейблу:
+>kubectl get po -l app=my-app
+NAME                  READY   STATUS    RESTARTS   AGE
+my-replicaset-bwln7   1/1     Running   0          6m11s
+my-replicaset-kgwhh   1/1     Running   0          6m11s
+
+2) ReplicaSet describe (get info)
+
+> kubectl describe replicaset my-replicaset
+Name:         my-replicaset
+Namespace:    default
+Selector:     app=my-app
+Labels:       <none>
+Annotations:  <none>
+Replicas:     2 current / 2 desired
+Pods Status:  2 Running / 0 Waiting / 0 Succeeded / 0 Failed
+Pod Template:
+  Labels:  app=my-app
+  Containers:
+   nginx:
+    Image:        quay.io/testing-farm/nginx:1.13
+    Port:         80/TCP
+    Host Port:    0/TCP
+    Environment:  <none>
+    Mounts:       <none>
+  Volumes:        <none>
+
+
+
+3) ReplicaSet self-scaling
+
+ReplicaSet обладает self-scaling-ом, он будет поддерживать столько реплик, сколько сказано.
+Попробуем удалить одну поду:
+
+>kubectl delete pod my-replicaset-kgwhh
+pod "my-replicaset-kgwhh" deleted
+
+>kubectl get po
+NAME                  READY   STATUS    RESTARTS   AGE
+my-replicaset-5g6mz   1/1     Running   0          5s
+my-replicaset-bwln7   1/1     Running   0          11h
+
+Например, если нода вышла из строя в кластере, то кубер перезапустить вшу поду на другой ноде
+
+4) Change replicas number in ReplicaSet
+
+А теперь мы хотим поскейлить приложения
+
+1) Можно открыть ReplicaSet.yaml - изменить replicas с 2 на 3, например и применить
+kubectl apply -f replicaset.yaml
+Примерно так работают CI/CD
+
+
+
+> scale --replicas 3 replicaset my-replicaset
+replicaset.apps/my-replicaset scaled
+
+> kubectl get po
+
+NAME                  READY   STATUS    RESTARTS   AGE
+my-replicaset-5g6mz   1/1     Running   0          16m
+my-replicaset-bwln7   1/1     Running   0          11h
+my-replicaset-skr7p   1/1     Running   0          5s
+
+Как кубер выбирает какой под удалять? Зачастую даляется самый молодой под, но могут быть и другие критерии.
+например мы после предыдущей команды (replicas: 3) поскейлили до 1 реплики:
+
+> scale --replicas 1 replicaset my-replicaset
+replicaset.apps/my-replicaset scaled
+> kubectl get po
+NAME                  READY   STATUS    RESTARTS   AGE
+my-replicaset-bwln7   1/1     Running   0          11h
+
+Т е выжил самый "старый" под
+
+Кубер также следит и за тем, чтобы подов не стало больше, смотрит он это по лейблу пода
+Мы можем, допустим, создать под с другим именем и параметрами, но с таким же лейблом, как указано в реплике
+See: kuber-learning/src/main/yml/sn03-ReplicaSet/pod.yaml
+В таком случае репликасет все равно удалит его по лейблу:
+
+> kubectl apply -f pod.yaml
+pod/additional-pod created
+
+> kubectl get po
+NAME                  READY   STATUS        RESTARTS   AGE
+additional-pod        1/1     Terminating   0          2s
+my-replicaset-2hkjj   1/1     Running       0          156m
+my-replicaset-bwln7   1/1     Running       0          14h
+
+> kubectl get po
+NAME                  READY   STATUS    RESTARTS   AGE
+my-replicaset-2hkjj   1/1     Running   0          156m
+my-replicaset-bwln7   1/1     Running   0          14h
+
+Когда такое может произойти (под больше чем в репликасете)? Например, пода вышла из строя (компонент поды перестал говорить кластеру, что он жив) - кубер помечает их как "unavailable" и создает поду вместо нее. А потом вдруг пода стала "available" - и поэтому кубер убирает ту поду, которую он создал вместо нее.
+
+5) Обновление докер образа на поде - обновление приложения
+
+1. Либо обновить имедж на конкретном контейнере репликасета (по имени)
+
+kubectl set image replicaset my-replicaset nginx=quay.io/testing-farm/nginx:1.13
+
+2. Либо обновить имедж на всех контейнерах в репликасете
+
+kubectl set image replicaset my-replicaset '*=quay.io/testing-farm/nginx:1.12'
+
+Мы обновили образ в репликасете - но поды у него остались со старыми образами. Репликасет не смотрит на темплейт, ему важно только replicas. Для создания нового пода надо удалить старые руками, чтобы репликасет пересоздал недостающие поды.
+
+Репликасет не может обновлять поды, но это может делать еще более высокая абстракция - Deployment, который удаляет репликасет и все поды и создает заново.
+
+6) ReplicaSet delete
+
+> kubectl delete replicaset --all
+replicaset.apps "my-replicaset" deleted
+
+6.1) Как завершаются приложения в терминируемых подах?
+
+Это автоматически удаляет все поды репликасета
+
+А если мы убиваем под, то как приложуха продолжает обработку последних запросов от клиента?
+
+Команда, которая позволяет почитать в консоле доки на объекты кубера (или подобъекты, пример - popd.spec)
+> kubectl explain pod.spec
+   terminationGracePeriodSeconds        <integer>
+     Optional duration in seconds the pod needs to terminate gracefully. May be
+     decreased in delete request. Value must be non-negative integer. The value
+     zero indicates stop immediately via the kill signal (no opportunity to shut
+     down). If this value is nil, the default grace period will be used instead.
+     The grace period is the duration in seconds after the processes running in
+     the pod are sent a termination signal and the time when the processes are
+     forcibly halted with a kill signal. Set this value longer than the expected
+     cleanup time for your process. Defaults to 30 seconds.
+
+Кубер отправляет поде tickTerm секунд на то, чтобы приложение gracefully завершилось - дообработало свои запросы. Работает только если приложение умеет обрабатывать tickTerm-ы. В противном случае приложение просто продолжает работать в течение tickTerm секунд, и потом ему посылается сигнал tickKill. Тогда приложение завершается сразу и все запросы от юзера идут нафиг) Лайфхак: в таком случае можно юзать preStopHooks.
