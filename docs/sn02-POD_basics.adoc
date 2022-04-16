@@ -1,6 +1,7 @@
 # POD - basics.
 
-Source: link:https://www.youtube.com/watch?v=V6aGfrMXhbA&list=PL8D2P0ruohOBSA_CDqJLflJ8FLJNe26K-&index=2[youtube]
+Source: link:https://www.youtube.com/watch?v=V6aGfrMXhbA&list=PL8D2P0ruohOBSA_CDqJLflJ8FLJNe26K-&index=2[youtube] +
+PATH: _kuber-learning/src/main/yml/sn02_POD_basics/..._
 
 *Content:*
 
