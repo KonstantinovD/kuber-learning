@@ -7,7 +7,7 @@ PATH: _kuber-learning/src/main/yml/sn02_POD_basics/..._
 
 - 1) Определение. Примеры подов с несколькими контейнерами
 - 2) Создание пода
-- 3) Get pod info
+- 3) Pod describe
 - 4) Удаление пода
 - 5) Поиск пода по лейблу
 
@@ -72,7 +72,7 @@ my-pod-1   0/1     ContainerCreating   0          4s
 ----
 
 
-### 3) Get pod info
+### 3) Pod describe
 
 [source, bash]
 ----
