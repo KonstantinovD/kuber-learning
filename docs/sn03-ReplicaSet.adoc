@@ -18,7 +18,7 @@ PATH: _kuber-learning/src/main/yml/sn03-ReplicaSet/..._
   * 5.1) Как завершаются приложения в терминируемых подах?
 
 
-==== 1) ReplicaSet intro/create
+=== 1) ReplicaSet intro/create
 Как и у пода - есть metadata/name/specs, но репликасет отличается тремя параметрами:
 
 - *replicas* - сколько реплик хотим запустить
