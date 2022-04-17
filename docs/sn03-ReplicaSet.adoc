@@ -2,6 +2,7 @@
 
 Source: link:https://www.youtube.com/watch?v=LLVfC08UVqY&list=PL8D2P0ruohOBSA_CDqJLflJ8FLJNe26K-&index=3[youtube] +
 PATH: _kuber-learning/src/main/yml/sn03-ReplicaSet/..._
+Api Version: _apps/v1_
 
 *Content:*
 
