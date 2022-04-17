@@ -1,0 +1,132 @@
+1) Deployment - intro
+
+Deployment создает под собой ReplicaSet
+По большому счету, за исключением некоторых дополнительных полей (которые будут описаны чуть дальше), описание Deployment ничем от ReplicaSet не отличается.
+
+
+> kubectl apply -f deployment.yaml
+deployment.apps/my-deployment created
+
+> kubectl get deployments
+NAME            READY   UP-TO-DATE   AVAILABLE   AGE
+my-deployment   2/2     2            2           22s
+
+> kubectl get pods
+NAME                             READY   STATUS    RESTARTS   AGE
+my-deployment-6c547cf6d6-khtlk   1/1     Running   0          61s
+my-deployment-6c547cf6d6-snbvg   1/1     Running   0          61s
+
+Имена подов - <deployment_name>-6c547cf6d6-xxxxx - содержат на конце два хеша. Первый хеш не отличается (6c547cf6d6), а второй - отличается (khtlk) и (snbvg).
+Это потому что Deployment автоматически создал себе ReplicaSet и нагенерил ему соответствующий хэш - 6c547cf6d6:
+
+kubectl get rs
+NAME                       DESIRED   CURRENT   READY   AGE
+my-deployment-6c547cf6d6   2         2         2       2m49s
+
+Далее: если вы хотите поскейлить поды, то надо скейлить именно Deployment, а не ReplicaSet.
+
+2) Deployment - change docker image
+
+Теперь попробуем обновить образ - делаем это на деплойменте. Три способа:
+
+1. Применить APPLY:
+`kubectl apply -f deployment.yaml`
+
+2. Set image:
+kubectl set image deployment my-deployment '*=quay.io/testing-farm/nginx:1.14'
+
+2.1) Edit resource - command
+
+3. Edit resource (deployment)
+kubectl edit deployment my-deployment
+(в windows откроется nodepad)
+Edit resource очень полезен для дебага, но не очень в продакшене (ибо кто куда что надеплоил там через edit)
+
+Редачим деплоймент:
+> kubectl edit deployment my-deployment
+deployment.apps/my-deployment edited
+
+> kubectl get pods
+NAME                             READY   STATUS              RESTARTS   AGE
+my-deployment-6c547cf6d6-2x4ft   1/1     Running             0          26s
+my-deployment-6c547cf6d6-tdjhg   1/1     Terminating         0          26s
+my-deployment-8456749bd9-fnfm5   0/1     ContainerCreating   0          0s
+my-deployment-8456749bd9-mcrxj   1/1     Running             0          2s
+
+> kubectl get rs
+NAME                       DESIRED   CURRENT   READY   AGE
+my-deployment-6c547cf6d6   0         0         0       24m
+my-deployment-8456749bd9   2         2         2       101s
+
+Видим следующее:
+
+- Существующие поды удаляются, вместо них создаются поды с новым имаджем - у них изменился общий хеш репликасета - 8456749bd9
+- Создался второй ReplicaSet с хешом 8456749bd9, первый же никуда не удалился, просто у него нет подов. Если мы вдруг захотим обновиться на старый образ (это я тестил), то Deployment возьмет первый ReplicaSet вместо того, чтобы создавать новый. +
+  Кроме того старые ReplicaSet-ы используются для ролбэка подов (см _2.2) Deployment rollout undo - command_)
+
+Что происходит под капотом при изменении image?
+
+- был репликасет replicaset-1 с двумя подами
+- деплоймент создает новый replicaset-2, но два пода все еще принадлежат replicaset-1
+- деплоймент делает один скейл вниз для replicaset-1 и один вверх для replicaset-2 +
+`kubectl scale replicaset replicaset-1 --replicas 1` +
+`kubectl scale replicaset replicaset-2 --replicas 1` +
+По итогу один под остается со старым имаджем, один - с новым.
+- деплоймент продолжает скейлить: +
+`kubectl scale replicaset replicaset-1 --replicas 0` +
+`kubectl scale replicaset replicaset-2 --replicas 2` +
+По итогу оба пода с новым имаджем.
+
+2.2) Deployment rollout undo/history - command. RevisionHistoryLimit.
+
+Теперь сделаем ролбэк деплоймента:
+
+> kubectl rollout undo deployment my-deployment
+deployment.apps/my-deployment rolled back
+
+> kubectl get rs
+NAME                       DESIRED   CURRENT   READY   AGE
+my-deployment-6c547cf6d6   2         2         1       119m
+my-deployment-8456749bd9   1         1         1       96m
+
+> kubectl get rs
+NAME                       DESIRED   CURRENT   READY   AGE
+my-deployment-6c547cf6d6   2         2         2       119m
+my-deployment-8456749bd9   0         0         0       96m
+
+Причем в Deployment есть параметр `RevisionHistoryLimit` - он по умолчанию равен 10 - это глубина хранения старых relicaset-ов, т е мы по дефолту можем откатиться до 10 деплоймента
+
+3) Deployment strategy
+
+> kubectl explain deployment.spec.strategy
+KIND:     Deployment
+VERSION:  apps/v1
+
+RESOURCE: strategy <Object>
+
+DESCRIPTION:
+     The deployment strategy to use to replace existing pods with new ones.
+
+     DeploymentStrategy describes how to replace existing pods with new ones.
+
+FIELDS:
+   rollingUpdate        <Object>
+     Rolling update config params. Present only if DeploymentStrategyType =
+     RollingUpdate.
+
+   type <string>
+     Type of deployment. Can be "Recreate" or "RollingUpdate". Default is
+     RollingUpdate.
+
+- RollingUpdate - обновление постепенно - реплики по очереди обновляются без даунтайма - сначала пересоздается один под, затем другой и т. д. Т е приложение работает без downtime.
+- Recreate - сначала удали все старое - потом удали все новое.
+
+Кроме того, у rollingUpdate стратегии есть два доп параметра: `maxSurge` и `maxUnavailable`: +
+`kubectl explain deployment.spec.strategy.rollingUpdate`
+
+- maxSurge - на сколько (в процентах) можно поднять количество подов относительно ReplicaSet при RollingUpdate. +
+  Если maxUnavailable != 0, то можно сделать maxSurge = 0 (не поднимать реплик больше, сначала убить старую, а потом создать новую)
+- maxUnavailable - на сколько (в процентах) можно опустить количество подов относительно ReplicaSet при RollingUpdate.
+
+Вопрос: Как добиться no-downtime работы приложения c одной подой?
+Ответ: `maxSurge = 1, maxUnavailable = 0%`
