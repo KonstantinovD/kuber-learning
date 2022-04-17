@@ -7,6 +7,12 @@ Api Version: _apps/v1_
 *Content:*
 
 - 1) Deployment intro/create
+- 2) Deployment - change docker image
+  * 2.1) Edit resource - command
+  * 2.2) Что происходит под капотом при изменении image?
+  * 2.3) Deployment rollout undo/history - command. RevisionHistoryLimit.
+- 3) Deployment strategy
+
 
 === 1) Deployment intro/create
 
