@@ -6,6 +6,9 @@ PATH: _kuber-learning/src/main/yml/sn05-Resources/..._ +
 *Content:*
 
 - 1) Namespaces
+- 2) Resources
+  * 2.1) QoS Class и приоритет подов по ресурсам
+  * 2.1) Insufficient cpu error - когда пода просит у кластера слишком много
 
 === 1) Namespaces
 
@@ -15,4 +18,130 @@ PATH: _kuber-learning/src/main/yml/sn05-Resources/..._ +
 Есть такие ресурсы, которые создаются в кластере и общие для всех неймспейсов. +
 *_Например_*: StorageClass, PV
 
+=== 2) Resources
+
+Два вида:
+
+- *_Limits_*: +
+То количество ресурсов, которое POD может использовать (верхняя граница). +
+К слову, если под запрашивает больше памяти, чем надо (что может, например, вызвать OOM в java) - кубер запускает _OOM-Killer_ и убивает этот под. Потом кубер по правилам ReplicaSet-а пересоздает его, что в теории может избавить вас от утечек памяти.
+
+- *_Requests_* +
+То количество ресурсов, которые резервируются для PODa на ноде. Не делится с другими подами на ноде. +
+Реквесты - это не физическая величина, они указываются только в deployment.yaml, по сути на основании таких реквестов кубер решает, на какую ноду разместить создаваемый под. +
+Как это работает? У нас есть нода, у ноды есть капасити. Например, _CPU = 16 kernels, Memory = 16GB_. +
+Пусть у поды *_requests_*: _CPU=4, memory=8GB_. Тогда на этой ноде свободная емкость ресурса станет _CPU=12, memory=8GB_. +
+Это не имеет ничего общего с реальным потреблением ресурсов подой, он может потреблять даже CPU=1. Но вот остальные поды в данной ноде могут совместно потреблять только ту свободную емкость ресурса, которая осталась (_CPU=12, memory=8GB_)
+
+Пример:
+[source, yaml]
+----
+    spec:
+      containers:
+      - image: quay.io/testing-farm/nginx:1.12
+        name: nginx
+        resources:
+          requests:
+            cpu: 10m
+            memory: 100Mi
+          limits:
+            cpu: 100m
+            memory: 100Mi
+----
+
+- 1 *_Mi_* - 1 мегабит
+- 1 *_m_* - 1 milliCPU, то есть 1000m = 1СPU. У поды может быть несколько CPU, и каждый под говорит, сколько процентов процессорного времени одного CPU ему надо.
+
+[source, bash]
+----
+> kubectl apply -f deployment.yaml
+---------------------------------------
+deployment.apps/my-deployment created
+
+> kubectl get pod
+---------------------------------------
+NAME                             READY   STATUS    RESTARTS   AGE
+my-deployment-787fb67fc6-8m7fr   1/1     Running   0          8s
+my-deployment-787fb67fc6-dbtsf   1/1     Running   0          8s
+
+> kubectl describe pod my-deployment-787fb67fc6-8m7fr
+---------------------------------------
+Name:         my-deployment-787fb67fc6-8m7fr
+Namespace:    default
+Priority:     0
+Node:         example2-control-plane/172.18.0.2
+Labels:       app=my-app
+              pod-template-hash=787fb67fc6
+IP:           10.244.0.22
+Controlled By:  ReplicaSet/my-deployment-787fb67fc6
+Containers:
+  nginx:
+    Container ID:   containerd://edd1aaa774cefa7734ec4e4294bc8d541538d50dbbe7c7360178b3bcbaf5d4f0
+    Image:          quay.io/testing-farm/nginx:1.12
+    Image ID:       quay.io/testing-farm/nginx@sha256:09e210fe1e7f54647344d278a8d0dee8a4f59f275b72280e8b5a7c18c560057f
+    Port:           80/TCP
+    Host Port:      0/TCP
+    State:          Running
+      Started:      Sun, 17 Apr 2022 20:09:09 +0300
+    Ready:          True
+    Restart Count:  0
+    Limits:
+      cpu:     100m
+      memory:  100Mi
+    Requests:
+      cpu:        10m
+      memory:     100Mi
+    Environment:  <none>
+    Mounts:
+      /var/run/secrets/kubernetes.io/serviceaccount from kube-api-access-6mf4q (ro)
+Conditions:
+  Type              Status
+  Initialized       True
+  Ready             True
+  ContainersReady   True
+  PodScheduled      True
+Volumes:
+  kube-api-access-6mf4q:
+    Type:                    Projected (a volume that contains injected data from multiple sources)
+    TokenExpirationSeconds:  3607
+    ConfigMapName:           kube-root-ca.crt
+    ConfigMapOptional:       <nil>
+    DownwardAPI:             true
+QoS Class:                   Burstable
+----
+
+Видим, что в `Containers.nginx` есть указанные нами `Limits` и `Requests`.
+
+==== 2.1) QoS Class и приоритет подов по ресурсам
+
+Теперь рассмотрим поле `QoS Class: Burstable`, который относится к ресурсам в кубере, относится к лимитам и реквестам и к их сочетаниям.
+
+Бывает 3 типа:
+
+- *_BestEffort_* - когда на приложение не ставится ни лимитов, ни реквестов, и пода может переехать на любую ноду и потреблять любое количество ресурсов. +
+  Проблемы начинаются тогда, когда ресурсов не хватает на ноде - пода не получит больше ресурсов, чем там их есть. +
+  Кроме того, если на ноде внезапно возникает нехватка ресурсов, BestEffort поды удяляются с нее в первую очередь, чтобы остальные могли работать.
+- *_Burstable_* - когда указаны реквесты, но не указаны лимиты, либо когда лимиты превышают реквесты (как у нас). +
+  Это говорит о том, что вы у ноды запрашиваете 10m-cpu, но в теории можете юзать до 100mi-cpu. +
+  В случае нехватки ресурсов удаляются с ноды во вторую очередь.
+- *_Guaranteed_* - когда лимиты во всех аспектах равны реквестам (очевидно, лимиты не могут быть меньше реквестов). +
+  Это поды наивысшего класса, их кубер будет до последнего держать на ноде. +
+  По сути, если у вас очень важная работа на поде производится - используйте данный способ.
+
+==== 2.1) Insufficient cpu error - когда пода просит у кластера слишком много
+
+Если у поды непомерные аппетиты, и кубер не может ее назначить ни на одну из своих нод - то мы можем видеть при создании поды такую ошибку в events:
+
+[source, bash]
+----
+kubectl describe po my-deployment-845d88fdcf-9bd29
+---------------------------------------
+...
+Events:
+  Type     Reason            Age               From               Message
+  ----     ------            ----              ----               -------
+  Warning  FailedScheduling  87s   default-scheduler  0/8 nodes are available: 8 Insufficient cpu... that the pod didn't tolerate
+----
+Подробнее можно почитать в ридмике: +
+*_See:_* _kuber-learning/src/main/yml/sn05-Resources/readme.adoc_
 
