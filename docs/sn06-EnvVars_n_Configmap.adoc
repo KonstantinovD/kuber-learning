@@ -1,6 +1,6 @@
 = Env vars & Configmap
 
-Source: link:https://www.youtube.com/watch?v=-xZ02dEF6kU&list=PL8D2P0ruohOBSA_CDqJLflJ8FLJNe26K-&index=4[youtube] +
+Source: link:https://www.youtube.com/watch?v=-xZ02dEF6kU&list=PL8D2P0ruohOBSA_CDqJLflJ8FLJNe26K-&index=5[youtube] +
 PATH: _kuber-learning/src/main/yml/sn06-EnvVars_n_Configmap/..._ +
 
 *Content:*
