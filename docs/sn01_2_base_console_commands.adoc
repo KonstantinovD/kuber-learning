@@ -54,8 +54,16 @@ contexts:
 ...
 ----
 
+### 4) Change cluster config
 
-### 4) Get all namespaces
+[source, bash]
+----
+> kubectl config use-context kind-example2
+---------------------------------
+Switched to context "kind-example2".
+----
+
+### 5) Get all namespaces
 [source, bash]
 ----
 > kubectl get namespaces
@@ -69,7 +77,7 @@ local-path-storage   Active   95m
 ----
 
 
-### 5) Get pods in ALL namespaces
+### 6) Get pods in ALL namespaces
 [source, bash]
 ----
 > kubectl get pods --all-namespaces=true
