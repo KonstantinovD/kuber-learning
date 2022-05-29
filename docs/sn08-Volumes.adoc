@@ -1,0 +1,113 @@
+= Volumes
+
+Source: link:https://www.youtube.com/watch?v=-xZ02dEF6kU&list=PL8D2P0ruohOBSA_CDqJLflJ8FLJNe26K-&index=9&t=2816s[youtube] +
+PATH: _kuber-learning/src/main/yml/sn08-Volumes/..._ +
+
+*Content:*
+
+- 1) Volumes intro
+- 2) Изменения volumes pod видит без перезапуска
+  * 2.1) Kubectl port-forward
+- TBD
+
+=== 1) Volumes intro
+
+_Docker_ позволяет монтировать файлы в контейнеры, в т. ч. файлы с диска. +
+_Kubernetes_ - позволяет монтировать данные сикретов/конфигмапов внутри контейнера в виде файлов. В конфигмапе можем указать ключ и длинное содержимое файла в виде строки (значение). Далее это большое содержимое файла указываем в деплойменте, и он будет указан в специальном разделе *_Volume_* (_volume созданный из конфигмапы_). И у нас в контейнере появляется файл.
+
+Вот, например, link:../src/main/yml/sn08-Volumes/configmap.yaml[sn08-Volumes/configmap.yaml] - указываем в конфигмапе json-содержимое. +
+Интересный yaml: символ "|" говорит о том, что начинается многострочное значение.
+[source, yaml]
+----
+default.conf: |
+----
+
+Файл в контейнере создается с названием равным названию ключа - "default.conf".
+
+Создадим конфигмапу с json-значением:
+[source, bash]
+----
+> kubectl apply -f configmap.yaml
+---------------------------------------
+configmap/my-configmap created
+----
+
+Теперь посмотрим на манифест деплоймента - link:../src/main/yml/sn08-Volumes/deployment-with-configmap.yaml[deployment-with-configmap.yaml]. Появляются новые разделы *_volumeMount_* и *_volumes_* (тома):
+[source, yaml]
+----
+apiVersion: apps/v1
+kind: Deployment
+spec:
+  template:
+    spec:
+      containers:
+      - image: quay.io/testing-farm/nginx:1.12
+        volumeMounts:
+        - name: config
+          mountPath: /etc/nginx/conf.d/
+      volumes:
+      - name: config
+        configMap:
+          name: my-configmap
+----
+- _volumeMount_ находится на уровне описания контейнера. Он описывает точку монтирования внутри контейнера - путь к файлу (тому) внутри контейнера.
+- _volumes_ описывается на уровне спецификаций. Описывает тип volume (из конфигмапы, из сикрета и пр) и его имя.
+
+Но зачем так сложно? Почему нельзя просто указать, в каком контейнере какой файл создать. Потому, что один и тот же том можно смонтировать в несколько контейнеров. (Дополнительно поговорим потом).
+
+Создадим деплоймент и зайдем в bash-терминал пода:
+[source, bash]
+----
+> kubectl apply -f deployment-with-configmap.yaml
+---------------------------------------
+deployment.apps/my-deployment created
+
+>kubectl exec -it my-deployment-d859ff6bf-5hr2n -- bash
+---------------------------------------
+root@my-deployment-d859ff6bf-5hr2n:/#
+----
+Посмотрим на содержимое файла (видим, что путь к файлу тот, что мы и указывали - _/etc/nginx/conf.d/_):
+[source, bash]
+----
+root@my-deployment-d859ff6bf-5hr2n:/# ls
+bin  boot  dev  etc  home  lib  lib64  media  mnt  opt  proc  product_uuid  root  run  sbin  srv  sys  tmp  usr  var
+root@my-deployment-d859ff6bf-5hr2n:/# cd etc/nginx/conf.d/
+root@my-deployment-d859ff6bf-5hr2n:/etc/nginx/conf.d# ls
+default.conf
+root@my-deployment-d859ff6bf-5hr2n:/etc/nginx/conf.d# cat default.conf
+server {
+listen       80 default_server;
+server_name  _;
+
+    default_type text/plain;
+
+    location / {
+        return 200 '$hostname\n';
+    }
+}
+root@my-deployment-d859ff6bf-5hr2n:/etc/nginx/conf.d#
+----
+
+Естественно, есть ограничения на размер этих файлов. Грубо говоря, 20 МБ туда монтировать не стоит. +
+Таким образом, например, часто монтируются файлы сертификатов из сикретов.
+
+=== 2) Изменения volumes pod видит без перезапуска
+
+==== 2.1) Kubectl port-forward
+
+[source, bash]
+----
+> kubectl port-forward my-deployment-d859ff6bf-5hr2n 8080:80
+---------------------------------------
+Forwarding from 127.0.0.1:8080 -> 80
+Forwarding from [::1]:8080 -> 80
+Handling connection for 8080
+
+> curl 127.0.0.1:8080
+---------------------------------------
+my-deployment-d859ff6bf-5hr2n
+----
+Мы видим возвращаемое сообщение на хосте 80 контейнера, поскольку данная конфигурация сервера у нас лежит в поде в виде файла (эт специальный формат, надо исследовать дальше).
+
+=== TBD:
+link:https://www.youtube.com/watch?v=-xZ02dEF6kU&list=PL8D2P0ruohOBSA_CDqJLflJ8FLJNe26K-&index=10&t=3758s[youtube]
