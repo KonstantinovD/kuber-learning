@@ -143,5 +143,5 @@ Events:
   Warning  FailedScheduling  87s   default-scheduler  0/8 nodes are available: 8 Insufficient cpu... that the pod didn't tolerate
 ----
 Подробнее можно почитать в ридмике: +
-*_See:_* _kuber-learning/src/main/yml/sn05-Resources/readme.adoc_
+*_See:_* link:../src/main/yml/sn05-Resources/readme.adoc[readme.adoc]
 
