@@ -8,7 +8,6 @@ PATH: _kuber-learning/src/main/yml/sn08-Volumes/..._ +
 - 1) Volumes intro
 - 2) Изменения volumes pod видит без перезапуска
   * 2.1) Kubectl port-forward
-- TBD
 
 === 1) Volumes intro
 
@@ -109,5 +108,43 @@ my-deployment-d859ff6bf-5hr2n
 ----
 Мы видим возвращаемое сообщение на хосте 80 контейнера, поскольку данная конфигурация сервера у нас лежит в поде в виде файла (эт специальный формат, надо исследовать дальше).
 
-=== TBD:
-link:https://www.youtube.com/watch?v=-xZ02dEF6kU&list=PL8D2P0ruohOBSA_CDqJLflJ8FLJNe26K-&index=10&t=3758s[youtube]
+А теперь отредачим конфигмапу - добавим
+----
+return 200 '$hostname\nOK\n';
+----
+
+И отредачим configmap:
+[source, bash]
+----
+kubectl apply -f configmap.yaml
+---------------------------------------
+configmap/my-configmap configured
+----
+Мы говорили о том, что, меняя конфигмапу, нам надо перезапускать контейнер - он не видит изменения. +
+В отличие от этого, когда мы монтируем конфигмапы как файлы в контейнер - изменения видны, кубернетес перемонтирует конфигмапу с новым значением. Зайдем внутрь контейнера и увидим, что да, файл внутри изменился:
+
+[source, bash]
+----
+> kubectl exec -it my-deployment-d859ff6bf-5hr2n -- bash
+
+root@my-deployment-d859ff6bf-5hr2n:/# cat etc/nginx/conf.d/default.conf
+---------------------------------------
+server {
+    listen       80 default_server;
+    server_name  _;
+
+    default_type text/plain;
+
+    location / {
+        return 200 '$hostname\nOK\n';
+    }
+}
+root@my-deployment-d859ff6bf-5hr2n:/#
+----
+Но если мы сделаем порт-форвард повторно, то ничего не поменяется, 'OK' на следующей строке нам не выведется. Контейнер ничего не говорит уже запущенным процессам о том, что что-то поменялось, и внутри процессов в поде все остается по старому. Нужен engine reload. Приложение само должно следить за файлами, по крайней мере мы можем сделать эндпоинт перезагрузки, который заставит приложение перечитать конфиги:
+[source, bash]
+----
+> curl 127.0.0.1:8080
+---------------------------------------
+my-deployment-d859ff6bf-5hr2n
+----
