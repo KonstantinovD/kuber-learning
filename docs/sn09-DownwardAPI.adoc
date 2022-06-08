@@ -1,0 +1,113 @@
+= Downward api
+
+Source: link:https://www.youtube.com/watch?v=-xZ02dEF6kU&list=PL8D2P0ruohOBSA_CDqJLflJ8FLJNe26K-&index=11&t=4022s[youtube] +
+PATH: _kuber-learning/src/main/yml/sn09-DownwardAPI/..._ +
+
+*Content:*
+
+- 1) Downward api intro
+  * 1.1) See mounted files in pod
+
+=== 1) Downward api intro
+
+Позволяет передать приложению некоторые параметры манифестов в качестве
+
+- переменных окружения
+- или файлов
+
+Это помогает приложению узнать различную инфу о том, где он запущен, например, адрес узла, название узла/неймспейса, реквесты и лимиты, описанные внутри пода и пр.
+
+Пример downward - с параметрами в переменных окружения и в файлах (mounts) +
+*_See:_* _deployment-with-downward-api.yaml_
+[source, yaml]
+----
+spec:
+  containers:
+  - image: quay.io/testing-farm/nginx:1.12
+    name: nginx
+    env:
+    - name: __NODE_NAME
+      valueFrom:
+        fieldRef:
+          fieldPath: spec.nodeName
+    - name: __POD_NAME
+      valueFrom:
+        fieldRef:
+          fieldPath: metadata.name
+    volumeMounts:
+    - name: podinfo
+      mountPath: /etc/podinfo
+  volumes:
+  - name: podinfo
+    downwardAPI:
+      items:
+      - path: "labels"
+        fieldRef:
+          fieldPath: metadata.labels
+      - path: "annotations"
+        fieldRef:
+          fieldPath: metadata.annotations
+----
+Заметьте, что путь по типу `spec.nodeName` - это реально существующий параметр у пода, который добавляется под под самим кубером. `status.podIP` - _status_ - это еще один раздел, который добавляется кубером, в этом разделе хранится инфа о состоянии пода - ip-адрес пода, какое состояние у liveness-probe, какие события были на поде и пр. +
+Другие примеры: _metadata.namespace_, _status.podIP_, _status.hostIP_, _spec.serviceAccountName_ и пр.
+
+Теперь рассмотрим монтирование данных манифеста в качестве файлов (томов). Посмотрим на _volumeMounts_ под _containers_. Volume mount с именем *podinfo* указывает на папку _/etc/podinfo_, в это же время в разделе _volumes_ видно, что *podinfo* - это том типа *_downwardAPI_*. И там же мы указываем, что именно будет смонтировано к нам в под - а это _metadata.labels_ (метки пода) и _metadata.annotations_ (аннотации пода). Т е мы в два файла - _labels_ и _annotations_ будем монтировать данные.
+
+Применим деплоймент:
+[source, bash]
+----
+> kubectl apply -f deployment-with-downward-api.yaml
+---------------------------------
+deployment.apps/my-deployment created
+----
+Зайдем в консоль деплоймента:
+[source, bash]
+----
+> kubectl exec -it my-deployment-6c7bbf9ff6-nf9b9 -- bash
+> root@my-deployment-6c7bbf9ff6-nf9b9:/# env
+HOSTNAME=my-deployment-6c7bbf9ff6-nf9b9
+NJS_VERSION=1.12.2.0.1.14-1~stretch
+TEST=foo
+NGINX_VERSION=1.12.2-1~stretch
+__POD_IP=10.244.0.9
+__POD_NAME=my-deployment-6c7bbf9ff6-nf9b9
+KUBERNETES_PORT_443_TCP_PROTO=tcp
+KUBERNETES_PORT_443_TCP_ADDR=10.96.0.1
+KUBERNETES_PORT=tcp://10.96.0.1:443
+PWD=/
+HOME=/root
+KUBERNETES_SERVICE_PORT_HTTPS=443
+KUBERNETES_PORT_443_TCP_PORT=443
+KUBERNETES_PORT_443_TCP=tcp://10.96.0.1:443
+__POD_SERVICE_ACCOUNT=default
+__NODE_IP=172.18.0.2
+TERM=xterm
+SHLVL=1
+KUBERNETES_SERVICE_PORT=443
+__NODE_NAME=example2-control-plane
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+__POD_NAMESPACE=default
+KUBERNETES_SERVICE_HOST=10.96.0.1
+_=/usr/bin/env
+root@my-deployment-6c7bbf9ff6-nf9b9:/#
+----
+Видим здесь всякие переменные с параметрами пода, по типу `__POD_IP=10.244.0.9` - то что нам и нужно. +
+Причем у вас даже может не быть прав узнавать данные об узле, но через DownwardAPI вы можете посмотреть эти данные (если их прокинули через downward)
+
+==== 1.1) See mounted files in pod
+
+Теперь посмотрим на файлы с DownwardAPI (annotations и labels):
+[source, bash]
+----
+> root@my-deployment-6c7bbf9ff6-nf9b9:/# cd etc/podinfo/
+> root@my-deployment-6c7bbf9ff6-nf9b9:/etc/podinfo# ls
+annotations  labels
+
+> root@my-deployment-6c7bbf9ff6-nf9b9:/etc/podinfo# cat annotations
+kubernetes.io/config.seen="2022-06-08T20:20:45.148354035Z"
+kubernetes.io/config.source="api"
+
+> root@my-deployment-6c7bbf9ff6-nf9b9:/etc/podinfo# cat labels
+app="my-app"
+pod-template-hash="6c7bbf9ff6"
+----
