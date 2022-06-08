@@ -8,6 +8,7 @@ PATH: _kuber-learning/src/main/yml/sn08-Volumes/..._ +
 - 1) Volumes intro
 - 2) Изменения volumes pod видит без перезапуска
   * 2.1) Kubectl port-forward
+- 3) Как под видит изменения volumes?
 
 === 1) Volumes intro
 
@@ -148,3 +149,38 @@ root@my-deployment-d859ff6bf-5hr2n:/#
 ---------------------------------------
 my-deployment-d859ff6bf-5hr2n
 ----
+
+=== 3) Как под видит изменения volumes?
+
+Смотри запуск деплоймента в link:sn09-DownwardAPI.adoc[sn09-DownwardAPI.adoc]
+
+[source, bash]
+----
+> kubectl exec -it my-deployment-6c7bbf9ff6-nf9b9 -- bash
+---------------------------------------
+root@my-deployment-6c7bbf9ff6-nf9b9:#
+
+> root@my-deployment-6c7bbf9ff6-nf9b9:# cd /etc/nginx/conf.d/
+> root@my-deployment-6c7bbf9ff6-nf9b9:/etc/nginx/conf.d# ls -lsa
+---------------------------------------
+total 12
+4 drwxrwxrwx 3 root root 4096 Jun  8 20:20 .
+4 drwxr-xr-x 3 root root 4096 Apr 30  2018 ..
+4 drwxr-xr-x 2 root root 4096 Jun  8 20:20 ..2022_06_08_20_20_45.1313308391
+0 lrwxrwxrwx 1 root root   32 Jun  8 20:20 ..data -> ..2022_06_08_20_20_45.1313308391
+0 lrwxrwxrwx 1 root root   19 Jun  8 20:20 default.conf -> ..data/default.conf
+----
+По факту, `default.conf` - это не файл, это линк на каталог `..data/default.conf`. А каталог `..data/default.conf` - тоже не каталог, это линк на каталог `..2022_06_08_20_20_45.1313308391`. И только этот каталог является каталогом. +
+Зайдем в него:
+[source, bash]
+----
+> root@my-deployment-6c7bbf9ff6-nf9b9:/etc/nginx/conf.d#  cd ..2022_06_08_20_20_45.1313308391
+> root@my-deployment-6c7bbf9ff6-nf9b9:/etc/nginx/conf.d/..2022_06_08_20_20_45.1313308391# ls -lsa
+total 12
+4 drwxr-xr-x 2 root root 4096 Jun  8 20:20 .
+4 drwxrwxrwx 3 root root 4096 Jun  8 20:20 ..
+4 -rw-r--r-- 1 root root  159 Jun  8 20:20 default.conf
+----
+И в этом каталоге есть файл `default.conf`, который действительно является файликом.
+
+Получается, что файл на самом деле находится в _/etc/nginx/conf.d/..2022_06_08_20_20_45.1313308391_, а в самой точке монтирования _/etc/nginx/conf.d_ находится _symlink_. Зачем это сделано? Для того, чтобы иметь возможность атомарно переключать содержимое файлов. Когда у нас меняется конфигмапа, кубер создает внутри точки монтирования новый каталог, куда кладет новый файлик, а потом переключает _symlink_ - операция переключения куда более быстрая, нежели загрузка файла. И у приложения нет задержки между чтением файла - просто поменялся адрес файла. Сначала читали один файл - теперь читаем другой. После монтирования старый каталог со старым файлом удаляется - т е файлики не накапливаются.
