@@ -1,0 +1,95 @@
+= EmptyDir
+
+Source: link:https://www.youtube.com/watch?v=8Wk1iI8mMrw&list=PL8D2P0ruohOBSA_CDqJLflJ8FLJNe26K-&index=10&t=1060s[youtube] +
+PATH: _kuber-learning/src/main/yml/sn11-EmptyDir/..._ +
+
+*Content:*
+
+- 1) EmptyDir intro
+  * 1.1) "mount" command
+  * 1.2) "touch" command
+
+=== 1) EmptyDir intro
+
+EmptyDir - это пустой каталог - создается временный диск, который прокидывается в под. После того, как под закончит работу, временный диск будет удален вместе с подом. Но если контейнер в поде рестартится, то данные остаются. +
+Зачем нужны такие диски? Во-первых, они нужны для вещей, которые не имеет смысл хранить - пример - тестовая база для интгерационных тестов. Во-вторых, когда вы качаете вещи из интернета, но у вас нет никакой системы хранения данных - но вам нужно их хотя бы посмотреть - используйте EmptyDir.
+
+[source, yaml]
+----
+spec:
+  containers:
+  - image: quay.io/testing-farm/nginx:1.12
+    name: nginx
+    volumeMounts:
+    - name: data
+      mountPath: /files
+  volumes:
+  - name: data
+    emptyDir: {}
+----
+Фигурные скобочки - это пустой словарь для yaml - обозначает пустой каталог.
+
+Применим деплоймент:
+[source, bash]
+----
+> kubectl apply -f deployment.yaml
+---------------------------------
+deployment.apps/my-deployment created
+----
+
+==== 1.1) "mount" command
+зайдем в консоль пода и выполним команду mount
+[source, bash]
+----
+> kubectl exec -it my-deployment-85fdb6f776-vjbv6 -- bash
+
+> root@my-deployment-85fdb6f776-vjbv6:/# mount
+---------------------------------
+...
+pids on /sys/fs/cgroup/pids type cgroup (ro,nosuid,nodev,noexec,relatime,pids)
+rdma on /sys/fs/cgroup/rdma type cgroup (ro,nosuid,nodev,noexec,relatime,rdma)
+cgroup on /sys/fs/cgroup/systemd type cgroup (ro,nosuid,nodev,noexec,relatime,name=systemd)
+/dev/sdc on /files type ext4 (rw,relatime,discard,errors=remount-ro,data=ordered)
+/dev/sdc on /etc/hosts type ext4 (rw,relatime,discard,errors=remount-ro,data=ordered)
+/dev/sdc on /dev/termination-log type ext4 (rw,relatime,discard,errors=remount-ro,data=ordered)
+...
+----
+Нас интересует строка `/dev/sdc on /files type ext4 (rw,relatime,discard,errors=remount-ro,data=ordered)`
+
+==== 1.2) "touch" command
+
+Теперь зайдем в наш каталог (он будет пуст) и создадим там файл (командой touch):
+[source, bash]
+----
+> root@my-deployment-85fdb6f776-vjbv6:/# cd files/
+> root@my-deployment-85fdb6f776-vjbv6:/files# ls
+---------------------------------
+
+> root@my-deployment-85fdb6f776-vjbv6:/files# touch test323
+> root@my-deployment-85fdb6f776-vjbv6:/files# ls -lsa
+---------------------------------
+total 8
+4 drwxrwxrwx 2 root root 4096 Jun  9 20:26 .
+4 drwxr-xr-x 1 root root 4096 Jun  9 20:17 ..
+0 -rw-r--r-- 1 root root    0 Jun  9 20:26 test323
+----
+Если мы выйдем из консоли пода и зайдем в нее еще раз - файл останется на месте:
+[source, bash]
+----
+root@my-deployment-85fdb6f776-vjbv6:/files# exit
+exit
+
+> kubectl exec -it my-deployment-85fdb6f776-vjbv6 -- bash
+root@my-deployment-85fdb6f776-vjbv6:/# cd files/
+root@my-deployment-85fdb6f776-vjbv6:/files# ls -lsa
+total 8
+4 drwxrwxrwx 2 root root 4096 Jun  9 20:26 .
+4 drwxr-xr-x 1 root root 4096 Jun  9 20:17 ..
+0 -rw-r--r-- 1 root root    0 Jun  9 20:26 test323
+----
+Но если мы удалим под - то при заходе в консоль нового пода каталог будет пустым.
+
+Ограничение на размер emptyDir есть - они хранятся в каталоге _var/lib/kubelet_ (не уверен, где это находится в kind), их размеры ограничены размером слайса _var/lib/kubelet_.
+
+*_Q:_* Зачем это нужно, если мы можем просто копировать файл под контейнер, который все равно умрет при рестарте пода?
+*_A:_* Потому что контейнер состоит из несколько слоев (бутерброд из слоев), и в результате манипуляция с файлами в контейнерами достаточно дорогая операция (особенно активно писать в файл). А тома создаются на отдельной файловой системе (и создаются быстрее, и операции быстрые).
