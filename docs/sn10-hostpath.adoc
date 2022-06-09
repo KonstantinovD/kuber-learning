@@ -1,0 +1,30 @@
+= Hostpath
+
+Source: link:https://www.youtube.com/watch?v=8Wk1iI8mMrw&list=PL8D2P0ruohOBSA_CDqJLflJ8FLJNe26K-&index=6&t=560s[youtube] +
+PATH: _kuber-learning/src/main/yml/sn10-hostpath/..._ +
+
+*Content:*
+
+- 1) Hostpath intro
+
+=== 1) Hostpath intro
+
+Hostpath - это самый простой вариант тома, в котором можно хранить данные. В поде есть точка монтирования - мы просто-напросто берем некоторый каталог и монтируем его внутрь тома (можно даже локальный каталог со своей машины). +
+Но это плохой вариант - небезопасный (не позволяет контролировать, к каким файлам в этом каталоге какой доступ используется).
+Обычно его запрещают к использованию в кластерах, но для обучения  пропробовать стоит.
+
+[source, yaml]
+----
+spec:
+  containers:
+  - image: quay.io/testing-farm/nginx:1.12
+    name: nginx
+    volumeMounts:
+    - name: data
+      mountPath: /files
+  volumes:
+  - name: data
+    hostPath:
+      path: /C:/Users/dako0819/DRIVE/data_pod
+----
+Это как-то должно работать (но оно так не работает).
