@@ -1,0 +1,142 @@
+= Probes
+
+Source: link:https://www.youtube.com/watch?v=OmTYdf_uDeQ&list=PL8D2P0ruohOBSA_CDqJLflJ8FLJNe26K-&index=8&t=285s[youtube] +
+PATH: _kuber-learning/src/main/yml/sn15-Probes/..._ +
+Also *_See:_* link:https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/[kubernetes.io]
+
+*Content:*
+
+- 1) Probes intro
+- 2) Probes params
+  * 2.1) readinessProbe
+  * 2.2) Как у контейнера считываются пробы
+  * 2.3) livenessProbe
+  * 2.4) startupProbe
+- 3) Probes in deployment
+
+=== 1) Probes intro
+
+
+
+Есть такие задачи - понимать, а действительно ли с приложением, которое сейчас работает в кластере, все хорошо. Может быть нам только кажется, что оно работает, а по факту у него дедлок, трафик на приложение не идет и все такое.
+
+Для этого существуют такие абстракции, как *_Probes_*. Это возможность понимать, что происходит с приложением - действительно ли оно запустилось,работает, и готово принимать трафик. Для этого существует три вида проб:
+
+- *Liveness Probe:* +
+Контроль за состоянием приложения во время его *_жизни_* +
+Исполняется постоянно (с какой-то периодичностью) +
+Если вдруг _Liveness Probe_ проваливается - то контейнер рестартует (счетчик рестартов увеличивается на 1), но под остается жить
+- *Readiness Probe:* +
+Проверяет, *_готово ли_* приложение принимать трафик +
+Исполняется постоянно +
+В случае падения данной пробы под убирается из балансировки (если под только один, то будет создан второй под) +
+*Note:* Liveness probes do not wait for readiness probes to succeed. If you want to wait before executing a liveness probe you should use initialDelaySeconds or a startupProbe.
+- *Startup Probe:* +
+Проверяет, *_запустилось ли_* приложение +
+Исполняется при старте +
+Пока _Startup Probe_ не выполнилась, две предыдущие пробы проверяться не будут - ждут запуска приложения (например, тяжелое Java-application)
+
+=== 2) Probes params
+
+Рассмотрим параметры проб:
+
+==== 2.1) readinessProbe
+
+[source, yaml]
+----
+kind: Deployment
+spec:
+  template:
+    spec:
+      containers:
+      - image: quay.io/testing-farm/nginx:1.12
+        name: nginx
+        readinessProbe:
+          failureThreshold: 3
+          httpGet:
+            path: /
+            port: 80
+          periodSeconds: 10
+          successThreshold: 1
+          timeoutSeconds: 1
+----
+- *_failureThreshold_* - можем задать количество проваленных попыток, в течение которых кубер не будет убирать под из балансировки. Таким образом мы защищаемся, например, от кратковременных сетевых лагов, когда пода один-два раза недоступна.
+- *_periodSeconds_* - с какой периодичностью проверять пробу (сек)
+- *_successThreshold_* - какое количество успешно выполненных попыток сбросит счетчик
+- *_failureThreshold_*. По дефолту равен 1 (в примерах все значения - дефолтные).
+
+==== 2.2) Как у контейнера считываются пробы
+
+- *_httpGet_* - эндпоинт который позволяет получить пробу в т. ч. и извне. Успешными для readiness пробы считаются ответы в диапазоне 200-399 Http status code. +
+Смотри пример в деплойменте выше - у нас есть сервер, поэтому нам данный тип считывания проб подходит.
+- *_exec_* - вместо эндпоинта мы можем выполнить внутри контейнера какую-то команду и проверить readiness пробу оттуда. Пример настройки такой команды:
+----
+readinessProbe:
+  exec:
+    command:
+    - cat
+    - /tmp/healthy
+----
+- *_tcpSocket_* - самый простой способ - просто указать tcp сокет, в который будет стучаться кубер. Если он есть, открыт и работает - то проверка прошла:
+----
+livenessProbe:
+  tcpSocket:
+    port: 8080
+----
+
+==== 2.3) livenessProbe
+
+[source, yaml]
+----
+livenessProbe:
+  failureThreshold: 3
+  httpGet:
+    path: /
+    port: 80
+  periodSeconds: 10
+  successThreshold: 1
+  timeoutSeconds: 1
+  initialDelaySeconds: 10
+----
+- *_initialDelaySeconds_* - когда не существовало startupProbe - использовалось как задержка, чтобы подождать readinessProbe. Теперь параметр не нужен (ну только если вы не забыли _startupProbe_)
+
+==== 2.4) startupProbe
+
+[source, yaml]
+----
+startupProbe:
+  httpGet:
+    path: /
+    port: 80
+  failureThreshold: 30
+  periodSeconds: 10
+----
+- С учетом параметров *_failureThreshold_* и *_periodSeconds_* мы, по сути, даем приложению 5 минут на запуск (30 проваленных проверок с интервалом 10 секунд)
+
+=== 3) Probes in deployment
+
+Создвдим деплоймент:
+[source, bash]
+----
+> kubectl apply -f deployment-with-stuff.yaml
+---------------------------------
+deployment.apps/my-deployment created
+
+> kubectl get pod
+---------------------------------
+NAME                             READY   STATUS    RESTARTS   AGE
+my-deployment-84bb85c89c-g72pv   1/1     Running   0          18s
+my-deployment-84bb85c89c-tctwp   1/1     Running   0          18s
+----
+
+Посмотрим логи пода:
+[source, bash]
+----
+> kubectl logs my-deployment-84bb85c89c-g72pv
+---------------------------------
+10.244.0.1 - - [16/Jun/2022:20:57:19 +0000] "GET / HTTP/1.1" 200 612 "-" "kube-probe/1.23" "-"
+10.244.0.1 - - [16/Jun/2022:20:57:19 +0000] "GET / HTTP/1.1" 200 612 "-" "kube-probe/1.23" "-"
+10.244.0.1 - - [16/Jun/2022:20:57:29 +0000] "GET / HTTP/1.1" 200 612 "-" "kube-probe/1.23" "-"
+10.244.0.1 - - [16/Jun/2022:20:57:29 +0000] "GET / HTTP/1.1" 200 612 "-" "kube-probe/1.23" "-"
+----
+Т е все три пробы успешно стучатся в наш nginx (мы их не можем различить, потому что они стучатся на один и тот же порт по одному и тому же пути). Естественно, сначала стучится _startupProbe_, потом одновременно начинают стучаться _readinessProbe_ и _livenessProbe_.
