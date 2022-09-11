@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: my-service # на основе имени сервиса будет создаваться DNS-запись
+spec:
+  ports:
+  - port: 80
+    targetPort: 80
+  selector:
+    app: my-app
+  type: ClusterIP
