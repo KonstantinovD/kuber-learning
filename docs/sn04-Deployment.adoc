@@ -180,3 +180,11 @@ spec:
     maxUnavailable: 10%
 ----
 Также можно указывать эти параметры в процентах. _Default value_ = 10% для каждого.
+
+=== 4) Immutable Deployment fields
+
+- Label selectors (надо пересоздавать деплоймент, удалить и пересоздать)
+- Secrets
+- ConfigMaps
+
+link:https://www.datree.io/resources/kubernetes-error-codes-field-is-immutable[datree.io]
