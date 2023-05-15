@@ -167,7 +167,8 @@ FIELDS:
 - maxUnavailable - на сколько (в процентах) можно опустить количество подов относительно ReplicaSet при RollingUpdate.
 
 *_Вопрос_*: Как добиться no-downtime работы приложения c одной подой? +
-*_Ответ_*: `maxSurge = 1, maxUnavailable = 0%`
+*_Ответ_*: `maxSurge = 1, maxUnavailable = 0%` +
+Также смотри про _maxSurge/maxUnavailable_ link:https://kubernetes.io/docs/concepts/workloads/controllers/deployment/[здесь]. Kubernetes не учитывает terminating pods при подсчете количества `availableReplicas`, которое должно быть между `replicas - maxUnavailable` и `replicas + maxSurge`. В результате вы можете заметить, что во время rollout у вас больше подов, чем ожидалось, и что общее количество ресурсов, потребляемых Deployment, больше, чем `replicas + maxSurge` пока `terminationGracePeriodSeconds` не истечет у терминируемых подов.
 
 [source, yaml]
 ----
